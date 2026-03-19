@@ -11,8 +11,12 @@ import logo from "../../assets/logo.jpeg";
 import { Link } from "react-router-dom";
 
 import { SidebarSection } from "./Sidebar";
+import { useCustomerAuth } from "@/context/AuthContextCustomer";
+import { Button } from "../ui/button";
 export function Navbar() {
   const [isSidebar, setIsSidebar] = useState(false);
+  const { userToken, handleLogout, user } = useCustomerAuth();
+  console.log(userToken);
   const visibility = isSidebar
     ? "md:hidden block bg-gray-100"
     : "md:hidden block";
@@ -61,30 +65,47 @@ export function Navbar() {
                 Explore
               </Link>
             </NavigationMenuLink>
-            <NavigationMenuLink asChild>
+            {user?.role!=="professional"&&<NavigationMenuLink asChild>
               <Link
                 className="focus:text-red-500 focus:underline no-underline"
                 to="/my-bookings"
               >
                 Booking
               </Link>
-            </NavigationMenuLink>
-            <NavigationMenuLink asChild>
-              <Link
-                className="focus:text-red-500 focus:underline no-underline"
-                to="/customer/profile/1"
-              >
-                Profile
-              </Link>
-            </NavigationMenuLink>
-            <NavigationMenuLink asChild>
-              <Link
-                className="focus:text-red-500 focus:underline no-underline"
-                to="/login"
-              >
-                Login
-              </Link>
-            </NavigationMenuLink>
+            </NavigationMenuLink>}
+            {userToken && (
+              <NavigationMenuLink asChild>
+                {user?.role !== "professional" ? (
+                  <Link
+                    className="focus:text-red-500 focus:underline no-underline"
+                    to="/customer/profile/1"
+                  >
+                    Profile
+                  </Link>
+                ) : (
+                  <Link
+                    className="focus:text-red-500 focus:underline no-underline"
+                    to="/service-provider-dashboard"
+                  >
+                   Dashboard
+                  </Link>
+                )}
+              </NavigationMenuLink>
+            )}
+            {!userToken ? (
+              <NavigationMenuLink asChild>
+                <Link
+                  className="focus:text-red-500 focus:underline no-underline"
+                  to="/login"
+                >
+                  Login
+                </Link>
+              </NavigationMenuLink>
+            ) : (
+              <Button className={"cursor-pointer"} onClick={handleLogout}>
+                Logout
+              </Button>
+            )}
           </NavigationMenuList>
         </NavigationMenu>
       </div>
@@ -93,7 +114,11 @@ export function Navbar() {
           isSidebar={isSidebar}
           className={`${visibility} fixed z-50 w-48  h-screen  top-0 left-0 bg-white shadow-md px-2`}
         >
-          <SidebarSection isSidebar={isSidebar} setIsSidebar={setIsSidebar} className={""} />
+          <SidebarSection
+            isSidebar={isSidebar}
+            setIsSidebar={setIsSidebar}
+            className={""}
+          />
         </div>
       )}
     </div>

@@ -33,10 +33,18 @@ import {
 } from "@/components/ui/form";
 import { Link } from "react-router-dom";
 
+import { useNavigate } from "react-router-dom";
+import { useCustomerAuth } from "@/context/AuthContextCustomer";
 // Inline schema since we are in a single-file environment
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters")
+    .regex(/[A-Z]/, "Must contain one uppercase letter")
+    .regex(/[a-z]/, "Must contain one lowercase letter")
+    .regex(/[0-9]/, "Must contain one number"),
 });
 
 export default function Login() {
@@ -44,8 +52,11 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+  const { login,user } = useCustomerAuth();
   const form = useForm({
     resolver: zodResolver(loginSchema),
+    mode: "onChange",
     defaultValues: {
       email: "",
       password: "",
@@ -57,46 +68,54 @@ export default function Login() {
       setServerError(null);
       setLoading(true);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      if (data.email !== "test@example.com") {
-        throw new Error("Invalid email or password. Try test@example.com");
-      }
-
+      const res = await login(data);
+      console.log(res);
+      // login success
       setIsSuccess(true);
+
+
+    if(res?.role=="customer"){
+          navigate("/my-bookings");
+    }
+    if(res?.role=="professional"){
+          navigate("/service-provider-dashboard");
+    }
+    
     } catch (error) {
-      setServerError(
-        error.message || "Something went wrong. Please try again.",
-      );
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Login failed. Please try again.";
+
+      setServerError(message);
     } finally {
       setLoading(false);
     }
   };
 
-  if (isSuccess) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-        <Card className="w-full max-w-md text-center p-8 animate-in fade-in zoom-in duration-300">
-          <div className="flex justify-center mb-4">
-            <CheckCircle2 className="h-16 w-16 text-green-500" />
-          </div>
-          <CardTitle className="text-2xl font-bold mb-2">
-            Login Successful!
-          </CardTitle>
-          <CardDescription className="text-lg">
-            Welcome back to Local Service Connect.
-          </CardDescription>
-          <Button
-            className="mt-6 w-full"
-            onClick={() => window.location.reload()}
-          >
-            Go to Dashboard
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  // if (isSuccess) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
+  //       <Card className="w-full max-w-md text-center p-8 animate-in fade-in zoom-in duration-300">
+  //         <div className="flex justify-center mb-4">
+  //           <CheckCircle2 className="h-16 w-16 text-green-500" />
+  //         </div>
+  //         <CardTitle className="text-2xl font-bold mb-2">
+  //           Login Successful!
+  //         </CardTitle>
+  //         <CardDescription className="text-lg">
+  //           Welcome back to Local Service Connect.
+  //         </CardDescription>
+  //         <Button
+  //           className="mt-6 w-full"
+  //           onClick={() => window.location.reload()}
+  //         >
+  //           Go to Dashboard
+  //         </Button>
+  //       </Card>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen w-full flex overflow-hidden bg-white">
@@ -220,8 +239,8 @@ export default function Login() {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 rounded-xl text-md font-bold shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700 transition-all hover:translate-y-[-1px] active:translate-y-[1px]"
-                  disabled={loading}
+                  disabled={loading || !form.formState.isValid}
+                  className="w-full h-12 rounded-xl text-md font-bold shadow-lg shadow-blue-500/20 bg-blue-600 hover:bg-blue-700"
                 >
                   {loading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
@@ -236,7 +255,10 @@ export default function Login() {
 
             <div className="text-center text-sm mt-8 text-slate-600">
               Don’t have an account yet?{" "}
-              <Link to={"/create-account"} className="text-blue-600 font-bold hover:underline">
+              <Link
+                to={"/create-account"}
+                className="text-blue-600 font-bold hover:underline"
+              >
                 Create an account
               </Link>
             </div>

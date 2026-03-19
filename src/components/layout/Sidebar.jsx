@@ -8,9 +8,12 @@ import { RxCross2 } from "react-icons/rx";
 import { Link, useLocation } from "react-router-dom";
 
 import logo from "../../assets/logo.jpeg";
+import { useCustomerAuth } from "@/context/AuthContextCustomer";
+import { Button } from "../ui/button";
 
 export function SidebarSection({ isSidebar, setIsSidebar, className }) {
   const url = useLocation();
+  const { userToken,handleLogout } = useCustomerAuth();
   const redirectTo = "/service-provider-dashboard";
   const isDashboard = url.pathname == redirectTo;
   return (
@@ -63,14 +66,16 @@ export function SidebarSection({ isSidebar, setIsSidebar, className }) {
                     : "Explore"}
                 </Link>
               </NavigationMenuLink>
-             {url.pathname.startsWith(redirectTo)&& <NavigationMenuLink asChild className={"w-44"}>
-                <Link
-                  className="focus:text-red-500 focus:underline no-underline"
-                  to={"/service-provider-dashboard/add-services"}
-                >
-                  Add Services
-                </Link>
-              </NavigationMenuLink>}
+              {url.pathname.startsWith(redirectTo) && (
+                <NavigationMenuLink asChild className={"w-44"}>
+                  <Link
+                    className="focus:text-red-500 focus:underline no-underline"
+                    to={"/service-provider-dashboard/add-services"}
+                  >
+                    Add Services
+                  </Link>
+                </NavigationMenuLink>
+              )}
               <NavigationMenuLink asChild className={"w-44"}>
                 <Link
                   className="focus:text-red-500 focus:underline no-underline"
@@ -85,28 +90,34 @@ export function SidebarSection({ isSidebar, setIsSidebar, className }) {
                     : "Bookings"}
                 </Link>
               </NavigationMenuLink>
-              <NavigationMenuLink asChild className={"w-44"}>
-                <Link
-                  className="focus:text-red-500 focus:underline no-underline"
-                  to={
-                    !url.pathname.startsWith(redirectTo)
-                      ? "/profile"
-                      : "/service-provider-dashboard/profile"
-                  }
-                >
-                  Profile
-                </Link>
-              </NavigationMenuLink>
+              {userToken && (
+                <NavigationMenuLink asChild className={"w-44"}>
+                  <Link
+                    className="focus:text-red-500 focus:underline no-underline"
+                    to={
+                      !url.pathname.startsWith(redirectTo)
+                        ? "/profile"
+                        : "/service-provider-dashboard/profile"
+                    }
+                  >
+                    Profile
+                  </Link>
+                </NavigationMenuLink>
+              )}
             </NavigationMenuList>
           </NavigationMenu>
         </div>
         <div className="absolute bottom-7 left-2 w-44 ">
-          <Link
-            className="px-10 hover:bg-gray-100 py-2 text-center rounded focus:text-red-500 focus:underline no-underline"
-            to="/login"
-          >
-            Login
-          </Link>
+          {!userToken ? (
+            <Link
+              className="px-10 hover:bg-gray-100 py-2 text-center rounded focus:text-red-500 focus:underline no-underline"
+              to="/login"
+            >
+              Login
+            </Link>
+          ) : (
+            <Button className={"cursor-pointer"} onClick={handleLogout}>Logout</Button>
+          )}
         </div>
       </div>
     </div>
