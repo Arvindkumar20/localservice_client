@@ -19,7 +19,26 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Upload, X } from "lucide-react";
+import {
+  Loader2,
+  Upload,
+  X,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
+  Home,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
+  Edit2,
+  Save,
+  User,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCustomerAuth } from "@/context/AuthContextCustomer";
 
 /* =========================
    ZOD SCHEMA
@@ -27,21 +46,23 @@ import { Loader2, Upload, X } from "lucide-react";
 const profileSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email"),
-
   address: z.string().min(5, "Address must be at least 5 characters"),
   googleMapLink: z
     .string()
-    .url("Enter a valid Google Map URL")
     .optional()
-    .or(z.literal("")),
+    .or(z.literal(""))
+    .refine((val) => {
+      if (!val) return true;
+      return /^(https?:\/\/)?(www\.)?(google\.com\/maps|maps\.google\.com|goo\.gl\/maps)/i.test(
+        val,
+      );
+    }, "Only valid Google Maps URL allowed"),
   phone: z
     .string()
     .min(10, "Phone must be at least 10 digits")
     .regex(/^\d+$/, "Phone number must contain only digits"),
   alternatePhone: z.string().optional().or(z.literal("")),
-  preferredService: z.string().min(2, "Please specify a preferred service"),
-  preferredTimeSlot: z.string().min(2, "Please specify a time slot"),
-  specialInstructions: z.string().optional().or(z.literal("")),
+
   dob: z
     .string()
     .min(1, "Date of birth is required")
@@ -49,58 +70,92 @@ const profileSchema = z.object({
       const today = new Date();
       const selectedDate = new Date(date);
 
-      // Must not be today or future
-      if (selectedDate >= today) return false;
+      if (selectedDate > today) return false; // future not allowed
 
-      // Check 18+ age
-      const age = today.getFullYear() - selectedDate.getFullYear();
-      const monthDiff = today.getMonth() - selectedDate.getMonth();
-      const dayDiff = today.getDate() - selectedDate.getDate();
+      let age = today.getFullYear() - selectedDate.getFullYear();
+      const m = today.getMonth() - selectedDate.getMonth();
 
-      if (
-        age < 18 ||
-        (age === 18 && monthDiff < 0) ||
-        (age === 18 && monthDiff === 0 && dayDiff < 0)
-      ) {
-        return false;
+      if (m < 0 || (m === 0 && today.getDate() < selectedDate.getDate())) {
+        age--;
       }
 
-      return true;
-    }, "You must be at least 18 years old and cannot select today or future date"),
-  // We'll handle image separately
+      return age >= 18;
+    }, "You must be at least 18 years old"),
 });
 
 export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
-
-  // This acts as our "Database" or persistent state
-  const [savedData, setSavedData] = useState({
-    name: "John Doe",
-    email: "john@example.com",
-    dob: "1998-01-01",
-    address: "Delhi, India",
-    googleMapLink: "https://maps.google.com",
-    phone: "9876543210",
-    alternatePhone: "",
-    preferredService: "Home Cleaning",
-    preferredTimeSlot: "Morning (9 AM - 12 PM)",
-    specialInstructions: "Please call before arriving.",
-  });
-
+  const [serverImage, setServerImage] = useState(null);
+  const [error, setError] = useState(null);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [isMapLocation, setIsMapLocation] = useState("");
+  const { userToken } = useCustomerAuth();
   const form = useForm({
     resolver: zodResolver(profileSchema),
-    defaultValues: savedData,
-    mode: "onChange", // Validate on change for better UX
+    defaultValues: {
+      name: "",
+      email: "",
+      dob: "",
+      address: "",
+      googleMapLink: "",
+      phone: "",
+      alternatePhone: "",
+    },
+    mode: "onChange",
   });
 
-  // Reset form when savedData changes
+  // Fetch profile data on mount
   useEffect(() => {
-    form.reset(savedData);
-  }, [savedData, form]);
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    setIsFetching(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_APP_API_URL}/user/get-profile`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${userToken}`,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch profile");
+      }
+
+      const data = await response.json();
+
+      const userData = data.data;
+      //
+      console.log(userData);
+      setIsMapLocation(userData.gMapUrl);
+      if (userData.dob) {
+        userData.dob = new Date(userData.dob).toISOString().split("T")[0];
+      }
+
+      form.reset(userData);
+
+      if (userData.profilePicture) {
+        setServerImage(userData.profilePicture);
+      }
+    } catch (err) {
+      setError(err.message);
+      console.error("Error fetching profile:", err);
+    } finally {
+      setIsFetching(false);
+    }
+  };
 
   // Clear success message after 3 seconds
   useEffect(() => {
@@ -110,10 +165,46 @@ export default function ProfilePage() {
     }
   }, [saveSuccess]);
 
+  const getCurrentLocationMapUrl = () => {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        return reject("Geolocation not supported");
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          const mapUrl = `https://maps.google.com/?q=${latitude},${longitude}`;
+          resolve(mapUrl);
+        },
+        (error) => {
+          reject(error.message);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+        },
+      );
+    });
+  };
+
+  const handleUseCurrentLocation = async () => {
+    setIsFetchingLocation(true);
+    try {
+      const mapUrl = await getCurrentLocationMapUrl();
+      form.setValue("googleMapLink", mapUrl, {
+        shouldValidate: true,
+      });
+    } catch (error) {
+      alert("Unable to fetch location: " + error);
+    } finally {
+      setIsFetchingLocation(false);
+    }
+  };
+
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Validate file type and size
       const validTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
       if (!validTypes.includes(file.type)) {
         alert("Please upload a valid image file (JPEG, PNG, GIF, or WebP)");
@@ -121,14 +212,11 @@ export default function ProfilePage() {
       }
 
       if (file.size > 5 * 1024 * 1024) {
-        // 5MB limit
         alert("File size must be less than 5MB");
         return;
       }
 
       setImageFile(file);
-
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -140,45 +228,56 @@ export default function ProfilePage() {
   const removeImage = () => {
     setImageFile(null);
     setImagePreview(null);
-    // Reset file input
     const fileInput = document.getElementById("image-upload");
     if (fileInput) fileInput.value = "";
   };
 
   const onSubmit = async (data) => {
     setIsLoading(true);
+    setError(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const formData = new FormData();
 
-      console.log("Saving Customer Data:", {
-        ...data,
-        image: imageFile
-          ? {
-              name: imageFile.name,
-              type: imageFile.type,
-              size: imageFile.size,
-              preview: imagePreview, // In real app, you'd upload to server and store URL
-            }
-          : null,
+      // Append all fields
+      Object.keys(data).forEach((key) => {
+        if (data[key] !== undefined && data[key] !== null) {
+          formData.append(key, data[key]);
+        }
       });
 
-      // Update saved data
-      setSavedData(data);
+      if (imageFile) {
+        formData.append("profilePicture", imageFile);
+      }
 
-      // Here you would typically upload the image to your server
-      // and update the user's profile with the new image URL
+      const response = await fetch(
+        `${import.meta.env.VITE_APP_API_URL}/user/update-profile`,
+        {
+          method: "PUT",
+          body: formData,
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Something went wrong");
+      }
 
       setSaveSuccess(true);
       setIsEditing(false);
-
-      // Clear image preview after successful save
       setImageFile(null);
       setImagePreview(null);
-    } catch (error) {
-      console.error("Error saving profile:", error);
-      alert("Failed to save profile. Please try again.");
+
+      // Refresh profile data
+      await fetchProfile();
+    } catch (err) {
+      setError(err.message);
+      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -189,54 +288,67 @@ export default function ProfilePage() {
   };
 
   const handleCancel = () => {
-    form.reset(savedData);
+    form.reset();
     setImageFile(null);
     setImagePreview(null);
+    setError(null);
     setIsEditing(false);
   };
 
-  // Get the first letter of name for avatar fallback
   const getInitials = (name) => {
     return name ? name.charAt(0).toUpperCase() : "U";
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not set";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+  if (isFetching) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-3xl shadow-xl">
+          <CardContent className="p-6 space-y-4">
+            <Skeleton className="h-12 w-3/4 mx-auto" />
+            <Skeleton className="h-32 w-32 rounded-full mx-auto" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-4/6" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const currentImage =
+    imagePreview || `${import.meta.env.VITE_IMAGE_API}${serverImage}`;
+// console.log(`${import.meta.env.VITE_IMAGE_API}${serverImage}`)
   return (
-    <div className="min-h-screen bg-muted/40 flex items-center justify-center p-4 md:p-6">
-      <Card className="w-full max-w-3xl shadow-xl rounded-2xl">
-        <CardHeader className="border-b bg-card">
-          <CardTitle className="text-2xl font-semibold">
-            Customer Profile
-          </CardTitle>
-        </CardHeader>
-
-        <CardContent className="space-y-6 pt-6">
-          {/* Success Alert */}
-          {saveSuccess && (
-            <Alert className="bg-green-50 border-green-200 text-green-800">
-              <AlertDescription>Profile updated successfully!</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Avatar & Header Info */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-lg bg-muted/30">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex items-center justify-center p-4 md:p-6">
+      <Card className="w-full max-w-3xl shadow-2xl rounded-2xl overflow-hidden border-0">
+        {/* Header with gradient */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-800 px-6 py-8 text-white">
+          <div className="flex items-center gap-4">
             <div className="relative">
-              <Avatar className="h-24 w-24 border-2 border-primary/10 shadow-sm">
-                {imagePreview ? (
-                  <AvatarImage src={imagePreview} alt="Profile preview" />
+              <Avatar className="h-24 w-24 border-4 border-white shadow-lg">
+                {currentImage ? (
+                  <AvatarImage src={currentImage} alt="Profile" />
                 ) : (
                   <AvatarImage src="" />
                 )}
-                <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                  {getInitials(savedData.name)}
+                <AvatarFallback className="bg-blue-900 text-white text-2xl">
+                  {getInitials(form.watch("name"))}
                 </AvatarFallback>
               </Avatar>
 
-              {/* Edit overlay for image */}
               {isEditing && (
                 <div className="absolute -bottom-2 -right-2 flex gap-1">
                   <label
                     htmlFor="image-upload"
-                    className="cursor-pointer bg-primary text-primary-foreground rounded-full p-1.5 hover:bg-primary/90 transition-colors shadow-md"
+                    className="cursor-pointer bg-white text-blue-600 rounded-full p-2 hover:bg-blue-50 transition-colors shadow-md"
                     title="Upload image"
                   >
                     <Upload size={16} />
@@ -245,7 +357,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={removeImage}
-                      className="bg-destructive text-destructive-foreground rounded-full p-1.5 hover:bg-destructive/90 transition-colors shadow-md"
+                      className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors shadow-md"
                       title="Remove image"
                     >
                       <X size={16} />
@@ -255,7 +367,6 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Hidden file input */}
             <input
               id="image-upload"
               type="file"
@@ -266,32 +377,52 @@ export default function ProfilePage() {
             />
 
             {!isEditing && (
-              <div className="text-center sm:text-left">
-                <h3 className="text-xl font-bold text-foreground">
-                  {savedData.name}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {savedData.email}
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold">
+                  {form.watch("name") || "Your Name"}
+                </h1>
+                <p className="text-blue-100 flex items-center gap-1 mt-1">
+                  <Mail size={14} />{" "}
+                  {form.watch("email") || "email@example.com"}
                 </p>
-                <div className="mt-2 inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  Frequent Service: {savedData.preferredService}
-                </div>
-                {savedData.phone && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    📞 {savedData.phone}
+                {form.watch("phone") && (
+                  <p className="text-blue-100 flex items-center gap-1 mt-1">
+                    <Phone size={14} /> {form.watch("phone")}
                   </p>
                 )}
               </div>
             )}
           </div>
+        </div>
+
+        <CardContent className="p-6 space-y-6">
+          {/* Alerts */}
+          {saveSuccess && (
+            <Alert className="bg-green-50 border-green-200 text-green-800 animate-in slide-in-from-top">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertDescription>Profile updated successfully!</AlertDescription>
+            </Alert>
+          )}
+
+          {error && (
+            <Alert
+              variant="destructive"
+              className="animate-in slide-in-from-top"
+            >
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* --- PERSONAL DETAILS SECTION --- */}
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* PERSONAL DETAILS */}
               <div className="space-y-4">
-                <h4 className="text-sm font-bold uppercase tracking-wider text-primary border-l-4 border-primary pl-2">
-                  Personal Details
-                </h4>
+                <div className="flex items-center gap-2">
+                  <User className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold">Personal Details</h3>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -303,9 +434,7 @@ export default function ProfilePage() {
                           <Input
                             {...field}
                             disabled={!isEditing}
-                            className={
-                              !isEditing ? "bg-muted/50" : "bg-background"
-                            }
+                            className={!isEditing ? "bg-gray-50" : ""}
                             placeholder="Enter your full name"
                           />
                         </FormControl>
@@ -324,10 +453,9 @@ export default function ProfilePage() {
                           <Input
                             {...field}
                             type="email"
+                            value={form.watch("email")}
                             disabled={!isEditing}
-                            className={
-                              !isEditing ? "bg-muted/50" : "bg-background"
-                            }
+                            className={!isEditing ? "bg-gray-50" : ""}
                             placeholder="your@email.com"
                           />
                         </FormControl>
@@ -341,14 +469,15 @@ export default function ProfilePage() {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number *</FormLabel>
+                        <FormLabel>
+                          <Phone className="h-3 w-3 inline mr-1" /> Phone Number
+                          *
+                        </FormLabel>
                         <FormControl>
                           <Input
                             {...field}
                             disabled={!isEditing}
-                            className={
-                              !isEditing ? "bg-muted/50" : "bg-background"
-                            }
+                            className={!isEditing ? "bg-gray-50" : ""}
                             placeholder="9876543210"
                           />
                         </FormControl>
@@ -367,9 +496,7 @@ export default function ProfilePage() {
                           <Input
                             {...field}
                             disabled={!isEditing}
-                            className={
-                              !isEditing ? "bg-muted/50" : "bg-background"
-                            }
+                            className={!isEditing ? "bg-gray-50" : ""}
                             placeholder="Optional"
                           />
                         </FormControl>
@@ -393,16 +520,17 @@ export default function ProfilePage() {
 
                       return (
                         <FormItem>
-                          <FormLabel>Date of Birth *</FormLabel>
+                          <FormLabel>
+                            <Calendar className="h-3 w-3 inline mr-1" /> Date of
+                            Birth *
+                          </FormLabel>
                           <FormControl>
                             <Input
                               type="date"
                               {...field}
-                              max={maxDate} // Prevent selecting under 18 or future
+                              max={maxDate}
                               disabled={!isEditing}
-                              className={
-                                !isEditing ? "bg-muted/50" : "bg-background"
-                              }
+                              className={!isEditing ? "bg-gray-50" : ""}
                             />
                           </FormControl>
                           <FormMessage />
@@ -410,27 +538,16 @@ export default function ProfilePage() {
                       );
                     }}
                   />
+                </div>
+              </div>
 
-                  <FormField
-                    control={form.control}
-                    name="googleMapLink"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Google Map Location URL</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            disabled={!isEditing}
-                            className={
-                              !isEditing ? "bg-muted/50" : "bg-background"
-                            }
-                            placeholder="https://maps.google.com/..."
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+              <Separator />
+
+              {/* ADDRESS DETAILS */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Home className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold">Address & Location</h3>
                 </div>
 
                 <FormField
@@ -443,7 +560,7 @@ export default function ProfilePage() {
                         <Textarea
                           {...field}
                           disabled={!isEditing}
-                          className={`min-h-[80px] ${!isEditing ? "bg-muted/50" : "bg-background"}`}
+                          className={`min-h-[80px] ${!isEditing ? "bg-gray-50" : ""}`}
                           placeholder="Enter your full street address"
                         />
                       </FormControl>
@@ -451,103 +568,90 @@ export default function ProfilePage() {
                     </FormItem>
                   )}
                 />
-              </div>
 
-              {/* --- SERVICE BOOKING PREFERENCES SECTION --- */}
-              <div className="space-y-4 pt-4">
-                <h4 className="text-sm font-bold uppercase tracking-wider text-primary border-l-4 border-primary pl-2">
-                  Service Preferences
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
                   <FormField
                     control={form.control}
-                    name="preferredService"
+                    name="googleMapLink"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Preferred Service *</FormLabel>
+                        <FormLabel>Google Maps Location</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="e.g., Home Cleaning"
-                            {...field}
-                            disabled={!isEditing}
-                            className={
-                              !isEditing ? "bg-muted/50" : "bg-background"
-                            }
-                          />
+                          <div className="flex gap-2">
+                            <Input
+                              {...field}
+                              disabled={!isEditing}
+                              className={`flex-1 ${!isEditing ? "bg-gray-50" : ""}`}
+                              placeholder="https://maps.google.com/..."
+                            />
+                            {isEditing && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleUseCurrentLocation}
+                                disabled={isFetchingLocation}
+                                className="whitespace-nowrap"
+                              >
+                                {isFetchingLocation ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <MapPin className="h-4 w-4 mr-2" />
+                                    Current Location
+                                  </>
+                                )}
+                              </Button>
+                            )}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="preferredTimeSlot"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Preferred Time Slot *</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="e.g., 9 AM - 12 PM"
-                            {...field}
-                            disabled={!isEditing}
-                            className={
-                              !isEditing ? "bg-muted/50" : "bg-background"
-                            }
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="specialInstructions"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Permanent Special Instructions</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Any specific instructions for service providers..."
-                          {...field}
-                          disabled={!isEditing}
-                          className={
-                            !isEditing ? "bg-muted/50" : "bg-background"
-                          }
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
+                  {isMapLocation && !isEditing && (
+                    <a
+                      href={isMapLocation}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:underline flex items-center gap-1"
+                    >
+                      <MapPin className="h-3 w-3" /> View on Google Maps
+                    </a>
                   )}
-                />
+                </div>
               </div>
 
-              {/* Form validation summary */}
+              <Separator />
+
+              {/* Validation Summary */}
               {isEditing && Object.keys(form.formState.errors).length > 0 && (
-                <Alert variant="destructive" className="mt-4">
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    Please fix the errors above before saving.
+                    Please fix {Object.keys(form.formState.errors).length}{" "}
+                    error(s) before saving.
                   </AlertDescription>
                 </Alert>
               )}
 
-              {/* --- ACTION BUTTONS --- */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t">
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3 pt-4">
                 {!isEditing ? (
-                  <div
+                  <Button
+                    type="button"
                     onClick={handleEditClick}
-                    className="w-full sm:w-1/2 bg-gray-950 text-white text-center py-2 cursor-pointer rounded-lg"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
                     size="lg"
                   >
-                    Update Profile
-                  </div>
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Edit Profile
+                  </Button>
                 ) : (
                   <>
                     <Button
                       type="submit"
-                      className="w-full sm:w-1/2 bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-green-600 hover:bg-green-700"
                       size="lg"
                       disabled={
                         isLoading ||
@@ -560,14 +664,17 @@ export default function ProfilePage() {
                           Saving...
                         </>
                       ) : (
-                        "Save Changes"
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save Changes
+                        </>
                       )}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleCancel}
-                      className="w-full sm:w-1/2"
+                      className="flex-1"
                       size="lg"
                       disabled={isLoading}
                     >

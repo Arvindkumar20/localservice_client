@@ -81,13 +81,7 @@ export default function Login() {
           navigate("/service-provider-dashboard");
     }
     
-    } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Login failed. Please try again.";
-
-      setServerError(message);
+    
     } finally {
       setLoading(false);
     }

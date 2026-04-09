@@ -79,8 +79,6 @@
 //   );
 // }
 
-
-
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 
@@ -103,9 +101,10 @@ import AddServices from "./pages/dashboard/serviceProvider/AddServices";
 // Customer
 import ProfilePage from "./pages/dashboard/customer/ProfilePage";
 import ProtectedRoute from "./ProtectedRoute";
+import ServicesPage from "./pages/dashboard/serviceProvider/ServicesPage";
+import BookingPage from "./pages/BookingPage";
 
 // Protected Route
-
 
 export default function RoutePath() {
   return (
@@ -157,6 +156,16 @@ export default function RoutePath() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/service-provider-dashboard/services"
+        element={
+          <ProtectedRoute allowedRoles={["professional"]}>
+            <Layout>
+              <ServicesPage />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/service-provider-dashboard/add-services"
@@ -179,7 +188,7 @@ export default function RoutePath() {
           </ProtectedRoute>
         }
       />
-
+      <Route path="/booking" element={<BookingPage />} />
       <Route
         path="/service-provider-dashboard/profile"
         element={

@@ -1,26 +1,57 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
-
-export default function AvailabilityCardPro({ setIsAvailable, isAvailable }) {
+export default function AvailabilityCardPro({
+  isAvailable,
+  setIsAvailable,
+  services,
+}) {
   return (
-    <Card className="rounded-2xl shadow-sm">
-      <CardContent className="p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-        <div>
-          <h3 className="text-lg font-semibold">
-            <span className="text-teal-600 mr-2">•</span>
-            Availability Status
-          </h3>
-          <p className="text-teal-600 mt-1">
-            You are appearing as online for new jobs
-          </p>
-        </div>
+    <div className="bg-white p-5 rounded-xl shadow space-y-4">
+      
+      {/* Toggle */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Availability</h2>
 
-        <Switch
-          checked={isAvailable}
-          onCheckedChange={(checked) => setIsAvailable(checked)}
-          className="data-[state=checked]:bg-teal-600"
-        />
-      </CardContent>
-    </Card>
+        <button
+          onClick={() => setIsAvailable(!isAvailable)}
+          className={`px-4 py-1 rounded-lg text-white ${
+            isAvailable ? "bg-green-500" : "bg-red-500"
+          }`}
+        >
+          {isAvailable ? "Available" : "Unavailable"}
+        </button>
+      </div>
+
+      {/* Services List */}
+      <div className="space-y-3">
+        {services?.map((service) => (
+          <div
+            key={service._id}
+            className="border p-3 rounded-lg bg-gray-50"
+          >
+            <p><strong>Experience:</strong> {service.experience} yrs</p>
+            <p><strong>Price:</strong> ₹{service.pricing}</p>
+            <p>
+              <strong>Status:</strong>{" "}
+              <span className="text-blue-600">
+                {service.availabilityStatus}
+              </span>
+            </p>
+
+            {/* Slots */}
+            <div className="mt-2">
+              <p className="font-medium">Slots:</p>
+              {service.availability?.length > 0 ? (
+                service.availability.map((slot) => (
+                  <p key={slot._id} className="text-sm text-gray-600">
+                    {slot.startTime} - {slot.endTime}
+                  </p>
+                ))
+              ) : (
+                <p className="text-sm text-gray-400">No slots</p>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

@@ -1,29 +1,88 @@
+// app/earnings/earnings/EarningsCard.js
+"use client";
+
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Wallet } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, Wallet } from "lucide-react";
 
-const EarningsCard = () => {
+const EarningsCard = ({ earningsData, summary }) => {
   return (
-    <Card className="rounded-2xl shadow-sm bg-white border">
-      <CardContent className="p-8 flex flex-col lg:flex-row lg:items-center lg:justify-between">
-        
-        <div>
-          <p className="text-slate-500 text-sm mb-2">
-            Available to Withdraw
-          </p>
-          <h2 className="text-4xl font-bold text-slate-900">
-            $2,480.00
-          </h2>
-        </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Total Earnings */}
+      <Card className="bg-gradient-to-br from-teal-600 to-teal-700 text-white">
+        <CardContent className="p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm opacity-90">Total Earnings</p>
+              <h3 className="text-3xl font-bold mt-2">
+                ₹{earningsData?.totalEarnings?.toLocaleString() || 0}
+              </h3>
+              <p className="text-xs mt-2 opacity-80">
+                Lifetime earnings
+              </p>
+            </div>
+            <DollarSign className="w-8 h-8 opacity-80" />
+          </div>
+        </CardContent>
+      </Card>
 
-        <Button className="mt-6 lg:mt-0 bg-teal-600 hover:bg-teal-700 rounded-xl px-8 py-6 text-base">
-          <Wallet className="w-5 h-5 mr-2" />
-          Withdraw Funds
-        </Button>
+      {/* Monthly Earnings */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-muted-foreground">This Month</p>
+              <h3 className="text-2xl font-bold mt-2">
+                ₹{earningsData?.monthlyEarnings?.toLocaleString() || 0}
+              </h3>
+              <div className="flex items-center gap-1 mt-2">
+                <TrendingUp className={`w-4 h-4 ${summary?.growth >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                <span className={`text-sm ${summary?.growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {summary?.growth}% from last month
+                </span>
+              </div>
+            </div>
+            <TrendingUp className="w-8 h-8 text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
 
-      </CardContent>
-    </Card>
+      {/* Pending Earnings */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-muted-foreground">Pending</p>
+              <h3 className="text-2xl font-bold mt-2">
+                ₹{earningsData?.pendingEarnings?.toLocaleString() || 0}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-2">
+                Ready for withdrawal
+              </p>
+            </div>
+            <Clock className="w-8 h-8 text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Withdrawn Earnings */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex justify-between items-start">
+            <div>
+              <p className="text-sm text-muted-foreground">Withdrawn</p>
+              <h3 className="text-2xl font-bold mt-2">
+                ₹{earningsData?.withdrawnEarnings?.toLocaleString() || 0}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-2">
+                Total withdrawn amount
+              </p>
+            </div>
+            <Wallet className="w-8 h-8 text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

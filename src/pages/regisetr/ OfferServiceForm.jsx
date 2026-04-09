@@ -24,30 +24,19 @@ const schema = z.object({
 });
 
 export default function OfferServiceForm() {
-  const { registerProfessional, loading,apiError } = useCustomerAuth();
+  const { registerProfessional, loading, apiError } = useCustomerAuth();
   const navigate = useNavigate();
   const form = useForm({
     resolver: zodResolver(schema),
   });
 
   const onSubmit = async (data) => {
-    try {
-      console.log("Sending:", data);
-
-
-
- 
-    
-
-      // 🔥 call context function
-      const user = await registerProfessional(data);
-      console.log(user);
-      // ✅ role based redirect
-      if (user.role === "professional") {
-        navigate("/service-provider-dashboard");
-      }
-    } catch (error) {
-      console.error(error);
+    // ✅ Remove try-catch - context already handles errors
+    const user = await registerProfessional(data);
+    console.log(user)
+    // ✅ Only navigate if registration was successful
+    if (user?.role === "professional") {
+      navigate("/service-provider-dashboard");
     }
   };
 
@@ -82,11 +71,11 @@ export default function OfferServiceForm() {
                 )}
               />
             ))}
-{apiError && (
-  <div className="bg-red-100 text-red-600 p-3 rounded-lg text-sm">
-    {apiError}
-  </div>
-)}
+            {apiError && (
+              <div className="bg-red-100 text-red-600 p-3 rounded-lg text-sm">
+                {apiError}
+              </div>
+            )}
             <Button
               disabled={loading}
               className="w-full bg-teal-600 hover:bg-teal-700"

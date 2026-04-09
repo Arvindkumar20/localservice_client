@@ -13,7 +13,7 @@ import { Button } from "../ui/button";
 
 export function SidebarSection({ isSidebar, setIsSidebar, className }) {
   const url = useLocation();
-  const { userToken,handleLogout } = useCustomerAuth();
+  const { userToken, handleLogout } = useCustomerAuth();
   const redirectTo = "/service-provider-dashboard";
   const isDashboard = url.pathname == redirectTo;
   return (
@@ -95,6 +95,18 @@ export function SidebarSection({ isSidebar, setIsSidebar, className }) {
                   <Link
                     className="focus:text-red-500 focus:underline no-underline"
                     to={
+                      !url.pathname.startsWith(redirectTo) ? "/" : "/service-provider-dashboard/services"
+                    }
+                  >
+                    Services
+                  </Link>
+                </NavigationMenuLink>
+              )}
+              {userToken && (
+                <NavigationMenuLink asChild className={"w-44"}>
+                  <Link
+                    className="focus:text-red-500 focus:underline no-underline"
+                    to={
                       !url.pathname.startsWith(redirectTo)
                         ? "/profile"
                         : "/service-provider-dashboard/profile"
@@ -104,6 +116,8 @@ export function SidebarSection({ isSidebar, setIsSidebar, className }) {
                   </Link>
                 </NavigationMenuLink>
               )}
+
+              
             </NavigationMenuList>
           </NavigationMenu>
         </div>
@@ -116,7 +130,9 @@ export function SidebarSection({ isSidebar, setIsSidebar, className }) {
               Login
             </Link>
           ) : (
-            <Button className={"cursor-pointer"} onClick={handleLogout}>Logout</Button>
+            <Button className={"cursor-pointer"} onClick={handleLogout}>
+              Logout
+            </Button>
           )}
         </div>
       </div>
