@@ -31,9 +31,9 @@ const {getProfessionalProfile}=useProfessionalApi();
         setLoading(true);
 
         const res = await getProfessionalProfile();
-console.log(res)
-        const { professional, services, bookings } = res;
 
+        const { professional, services, bookings } = res;
+console.log(professional)
         // ✅ Set User Data
        setUserData({
   name: professional?.user?.name || "",

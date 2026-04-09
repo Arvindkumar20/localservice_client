@@ -10,6 +10,7 @@ import { loadAllServices } from "@/services/api/customerApis";
 import { useNavigate } from "react-router-dom";
 
 import React, { useEffect, useMemo, useState } from "react";
+import NetworkErrorPage from "../NetworkErrorPage";
 
 export default function ServiceCards() {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ export default function ServiceCards() {
         "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=800&auto=format",
       Cleaning:
         "https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=800&auto=format",
+      Cook: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&auto=format",
     };
 
     const cleanCategory = categoryName?.toLowerCase().trim();
@@ -67,7 +69,7 @@ export default function ServiceCards() {
           desc: `My name is ${user?.name} ${service.title}
           and My services started with ₹${service.pricing}`,
 
-          image: getUnsplashImage(category),
+          image: getUnsplashImage(category||service.serviceName),
 
           available: true,
 
@@ -140,8 +142,7 @@ export default function ServiceCards() {
           setError(null);
         }
       } catch (err) {
-        console.log(err);
-        setError("Services Not Available ");
+        setError(err.message);
       } finally {
         setLoading(false);
       }
@@ -168,10 +169,14 @@ export default function ServiceCards() {
     return <div className="text-center py-10">Loading...</div>;
   }
 
+  if (error == "Network Error") {
+    return (
+      <NetworkErrorPage message={"Services Not rendred at this movement"} />
+    );
+  }
   if (error && filteredCards.length === 0) {
     return <div className="text-center text-red-500 py-2">{error}</div>;
   }
-
   // 🎨 UI SAME
   return (
     <div>

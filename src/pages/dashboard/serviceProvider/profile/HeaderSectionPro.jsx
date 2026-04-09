@@ -8,15 +8,15 @@ export default function HeaderSectionPro({
   isEditable,
   setIsEditable,
   setUserData,
-  userData
+  userData,
 }) {
-  const [name, setName] = useState("Alex Rivera");
-  const [email, setEmail] = useState("alex@example.com");
+  const [name, setName] = useState(userData.name || "Alex Rivera");
+  const [email, setEmail] = useState(userData.email || "alex@example.com");
   const [image, setImage] = useState(
     "https://static.vecteezy.com/vite/assets/photo-masthead-375-BoK_p8LG.webp",
   );
+  console.log(userData);
   const [fileData, setFileData] = useState(null);
-  console.log(isEditable);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -34,7 +34,6 @@ export default function HeaderSectionPro({
       name: name,
       email: email,
       image: fileData,
-     
     });
   };
   return (

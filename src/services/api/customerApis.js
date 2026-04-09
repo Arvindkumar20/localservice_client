@@ -8,15 +8,17 @@ export const API = axios.create({
 
 // Request Interceptor
 
-
 // Response Interceptor
 
-
 export const loadAllServices = async () => {
-    const response = await API.get(`/customer/all-services`);
-    return response.data;
-  };
-  export const getAllProfessionals = async (params) => {
+  const response = await API.get(`/customer/all-services`);
+  return response.data;
+};
+export const getAllProfessionals = async (params) => {
   const res = await API.get("/customer/professionals", { params });
+  return res.data;
+};
+export const getAllServicesCategories = async () => {
+  const res = await API.get("/customer/services-categories");
   return res.data;
 };
