@@ -88,6 +88,7 @@ export default function RecommendedProfessionals() {
         let userName = "Professional";
         let userEmail = "";
         let userImage = "";
+        let phone;
 
         if (userData) {
           userName =
@@ -95,6 +96,7 @@ export default function RecommendedProfessionals() {
             userData.fullName ||
             userData.displayName ||
             "Professional";
+          phone = userData?.phone;
           userEmail = userData?.email || "";
           userImage =
             userData?.image ||
@@ -148,6 +150,7 @@ export default function RecommendedProfessionals() {
           name: userName,
           email: userEmail,
           role: categoryName,
+          phone: phone,
           specialization:
             item?.specialization || item?.specialty || categoryName,
           reviews: reviews,
@@ -231,6 +234,7 @@ export default function RecommendedProfessionals() {
           service.description ||
           `${service.name} by ${selectedProfessional.name}`,
         price: service.pricing,
+        phone: selectedProfessional.phone,
         duration: service.duration || "1 hour",
         image: selectedProfessional.image,
         professionalId: selectedProfessional.id,
@@ -245,6 +249,7 @@ export default function RecommendedProfessionals() {
         id: selectedProfessional.id,
         userId: selectedProfessional.userId,
         name: selectedProfessional.name,
+        phone: selectedProfessional.phone,
         role: selectedProfessional.role,
         specialization: selectedProfessional.specialization,
         rating: selectedProfessional.rating,
@@ -364,7 +369,9 @@ export default function RecommendedProfessionals() {
 
           {/* Professionals Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {professionals.map((pro, index) => (
+            {professionals.map((pro, index) => {
+     
+              return (
               <Card
                 key={pro.id || index}
                 className="group relative overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
@@ -486,12 +493,18 @@ export default function RecommendedProfessionals() {
                             "No Services Available"
                           )}
                         </Button>
-                        <Button
-                          variant="outline"
-                          className="rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all duration-300"
+                        <a
+                          href={`https://wa.me/${pro?.phone}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
                         >
-                          <MessageCircle className="h-4 w-4" />
-                        </Button>
+                          <Button
+                            variant="outline"
+                            className="rounded-xl hover:bg-teal-50 hover:border-teal-300 transition-all duration-300 cursor-pointer"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                        </a>
                       </div>
                     </div>
                   </div>
@@ -502,7 +515,7 @@ export default function RecommendedProfessionals() {
                   ></div>
                 </CardContent>
               </Card>
-            ))}
+            )})}
           </div>
 
           {professionals.length === 0 && !loading && (

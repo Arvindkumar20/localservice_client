@@ -2,29 +2,37 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, MapPin, Phone, MessageCircle, RefreshCw } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  Phone,
+  MessageCircle,
+  RefreshCw,
+} from "lucide-react";
 import { cancelBooking } from "@/services/api/bookingsApi";
 
 // import { toast } from "react-hot-toast";
 
-const BookingCard = ({ 
+const BookingCard = ({
   id,
-  image, 
-  status, 
-  title, 
-  provider, 
-  price, 
-  date, 
+  image,
+  status,
+  title,
+  provider,
+  price,
+  date,
+  phone,
   timeSlot,
   statusColor,
   completed,
   paymentStatus,
-  onRefresh
+  onRefresh,
 }) => {
   const [cancelling, setCancelling] = useState(false);
 
   const getStatusStyles = (color) => {
-    switch(color) {
+    switch (color) {
       case "yellow":
         return "bg-yellow-100 text-yellow-800";
       case "teal":
@@ -39,9 +47,11 @@ const BookingCard = ({
   };
 
   const handleCancelBooking = async () => {
-    const confirmCancel = window.confirm("Are you sure you want to cancel this booking?");
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel this booking?",
+    );
     if (!confirmCancel) return;
-    
+
     try {
       setCancelling(true);
       const response = await cancelBooking(id);
@@ -75,28 +85,34 @@ const BookingCard = ({
         <div className="flex flex-col md:flex-row">
           {/* Image Section */}
           <div className="md:w-48 h-48 md:h-auto">
-            <img 
-              src={image || "https://via.placeholder.com/200"} 
+            <img
+              src={image || "https://via.placeholder.com/400"}
               alt={title}
               className="w-full h-full object-cover"
               onError={(e) => {
-                e.target.src = "https://via.placeholder.com/200";
+                e.target.src = "https://via.placeholder.com/500";
               }}
             />
           </div>
-          
+
           {/* Content Section */}
           <div className="flex-1 p-6">
             <div className="flex justify-between items-start flex-wrap gap-4">
               <div>
                 <div className="flex items-center gap-2 mb-2 flex-wrap">
-                  <span className={`text-xs px-2 py-1 rounded-full font-semibold ${getStatusStyles(statusColor)}`}>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full font-semibold ${getStatusStyles(statusColor)}`}
+                  >
                     {status}
                   </span>
                   {paymentStatus && (
-                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                      paymentStatus === "paid" ? "bg-green-100 text-green-800" : "bg-orange-100 text-orange-800"
-                    }`}>
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                        paymentStatus === "paid"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-orange-100 text-orange-800"
+                      }`}
+                    >
                       {paymentStatus === "paid" ? "Paid" : "Payment Pending"}
                     </span>
                   )}
@@ -105,7 +121,7 @@ const BookingCard = ({
                 <p className="text-gray-600 mb-2">{provider}</p>
                 <p className="text-teal-600 font-bold text-lg mb-3">{price}</p>
               </div>
-              
+
               {/* Date and Time */}
               <div className="text-right">
                 <div className="flex items-center gap-2 text-gray-500 mb-1">
@@ -120,20 +136,20 @@ const BookingCard = ({
                 )}
               </div>
             </div>
-            
+
             {/* Action Buttons */}
             <div className="flex gap-3 mt-6 pt-4 border-t flex-wrap">
               {status !== "COMPLETED" && status !== "CANCELLED" && (
                 <>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={handleReschedule}
                   >
                     Reschedule
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     className="text-red-600 hover:text-red-700"
                     onClick={handleCancelBooking}
@@ -143,17 +159,19 @@ const BookingCard = ({
                   </Button>
                 </>
               )}
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={handleContact}
+              <a
+                href={`https://wa.me/${phone}`}
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Contact
-              </Button>
+                <Button variant="outline" size="sm" onClick={handleContact}>
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  Contact
+                </Button>
+              </a>
               {status === "COMPLETED" && (
-                <Button 
-                  variant="default" 
+                <Button
+                  variant="default"
                   size="sm"
                   className="bg-teal-600 hover:bg-teal-700"
                   onClick={handleWriteReview}

@@ -365,6 +365,7 @@ export const CustomerAuthProvider = ({ children }) => {
     <AuthContextCustomer.Provider
       value={{
         user,
+        setUser,
         role: user?.role,
         isAuthenticated: !!userToken,
         loading,
@@ -375,6 +376,7 @@ export const CustomerAuthProvider = ({ children }) => {
         registerCustomerHandler,
         registerProfessional,
         login,
+        saveAuth,
         handleLogout,
       }}
     >

@@ -12,10 +12,12 @@ import { useCustomerAuth } from "@/context/AuthContextCustomer";
 import { Button } from "../ui/button";
 
 export function SidebarSection({ isSidebar, setIsSidebar, className }) {
+  const { user } = useCustomerAuth();
+  console.log(user);
   const url = useLocation();
   const { userToken, handleLogout } = useCustomerAuth();
   const redirectTo = "/service-provider-dashboard";
-  const isDashboard = url.pathname == redirectTo;
+  const isDashboard = user?.role || false;
   return (
     <div className="relative ">
       <div className={` h-screen ${className}`}>
@@ -55,18 +57,12 @@ export function SidebarSection({ isSidebar, setIsSidebar, className }) {
                 <Link
                   className="focus:text-red-500 focus:underline no-underline"
                   // to={!isDashboard ? "/explore" : redirectTo}
-                  to={
-                    !url.pathname.startsWith(redirectTo)
-                      ? "/explore"
-                      : "/service-provider-dashboard"
-                  }
+                  to={!isDashboard ? "/explore" : "/service-provider-dashboard"}
                 >
-                  {url.pathname.startsWith(redirectTo)
-                    ? "Dashboard"
-                    : "Explore"}
+                  {isDashboard ? "Dashboard" : "Explore"}
                 </Link>
               </NavigationMenuLink>
-              {url.pathname.startsWith(redirectTo) && (
+              {isDashboard && (
                 <NavigationMenuLink asChild className={"w-44"}>
                   <Link
                     className="focus:text-red-500 focus:underline no-underline"
@@ -80,14 +76,12 @@ export function SidebarSection({ isSidebar, setIsSidebar, className }) {
                 <Link
                   className="focus:text-red-500 focus:underline no-underline"
                   to={
-                    !url.pathname.startsWith(redirectTo)
+                    !isDashboard
                       ? "/my-bookings"
                       : "/service-provider-dashboard/earnings"
                   }
                 >
-                  {url.pathname.startsWith(redirectTo)
-                    ? "Earnings"
-                    : "Bookings"}
+                  {isDashboard ? "Earnings" : "Bookings"}
                 </Link>
               </NavigationMenuLink>
               {userToken && (
@@ -95,7 +89,9 @@ export function SidebarSection({ isSidebar, setIsSidebar, className }) {
                   <Link
                     className="focus:text-red-500 focus:underline no-underline"
                     to={
-                      !url.pathname.startsWith(redirectTo) ? "/" : "/service-provider-dashboard/services"
+                      !isDashboard
+                        ? "/"
+                        : "/service-provider-dashboard/services"
                     }
                   >
                     Services
@@ -107,8 +103,8 @@ export function SidebarSection({ isSidebar, setIsSidebar, className }) {
                   <Link
                     className="focus:text-red-500 focus:underline no-underline"
                     to={
-                      !url.pathname.startsWith(redirectTo)
-                        ? "/profile"
+                      !isDashboard
+                        ? "/customer/profile/1"
                         : "/service-provider-dashboard/profile"
                     }
                   >
@@ -116,8 +112,6 @@ export function SidebarSection({ isSidebar, setIsSidebar, className }) {
                   </Link>
                 </NavigationMenuLink>
               )}
-
-              
             </NavigationMenuList>
           </NavigationMenu>
         </div>

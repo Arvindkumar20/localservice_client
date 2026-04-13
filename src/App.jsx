@@ -12,7 +12,7 @@ export default function App() {
   return (
     <>
       <CustomerAuthProvider>
-        {!isNavAndTopBar && <Locationbar />}
+        {/* {!isNavAndTopBar && <Locationbar />} */}
         {!isNavAndTopBar && <Navbar />}
 
         <RoutePath />

@@ -5,24 +5,48 @@ import EarningsCardPro from "./EarningsCardPro";
 import HeaderSectionPro from "./HeaderSectionPro";
 import StatsCardsPro from "./StatsCardsPro";
 import { useProfessionalApi } from "@/hooks/useProfessionalApi";
-
+import axios from "axios";
+import { useCustomerAuth } from "@/context/AuthContextCustomer";
 
 export default function ProfilePro() {
-  const [isAvailable, setIsAvailable] = useState(true);
+  const { userToken, user, setUser, saveAuth } = useCustomerAuth();
+
+  const [status, setstatus] = useState(user.status);
   const [isEditable, setIsEditable] = useState(false);
-const {getProfessionalProfile}=useProfessionalApi();
+  const { getProfessionalProfile } = useProfessionalApi();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  console.log(userToken);
   const [userData, setUserData] = useState({
     name: "",
     email: "",
     image: "",
-    available: true,
+    available: user.status,
   });
-
+  console.log(status);
   const [services, setServices] = useState([]);
   const [bookings, setBookings] = useState([]);
+
+  const handleAvailableStatus = async () => {
+    try {
+      const res = await axios.patch(
+        `${import.meta.env.VITE_APP_API_URL}/professionals/availability`,
+        { status: status }, // <-- body (agar kuch send nahi karna ho to empty object)
+        {
+          headers: {
+            Authorization: `Bearer ${userToken}`,
+          },
+        },
+      );
+      saveAuth({ ...user, status: status }, userToken);
+      console.log(res);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    handleAvailableStatus();
+  }, [status]);
 
   // ✅ Fetch Profile Data
   useEffect(() => {
@@ -33,14 +57,14 @@ const {getProfessionalProfile}=useProfessionalApi();
         const res = await getProfessionalProfile();
 
         const { professional, services, bookings } = res;
-console.log(professional)
+
         // ✅ Set User Data
-       setUserData({
-  name: professional?.user?.name || "",
-  email: professional?.user?.email || "",
-  image: professional?.user?.profilePicture || "",
-  available: true,
-});
+        setUserData({
+          name: professional?.user?.name || "",
+          email: professional?.user?.email || "",
+          image: professional?.user?.profilePicture || "",
+          available: true,
+        });
 
         // ✅ Set Services
         setServices(services || []);
@@ -49,12 +73,12 @@ console.log(professional)
         setBookings(bookings || []);
 
         // ✅ Derive availability
-        if (services?.length > 0) {
-          const isAnyAvailable = services.some(
-            (s) => s.availabilityStatus === "available"
-          );
-          setIsAvailable(isAnyAvailable);
-        }
+        // if (services?.length > 0) {
+        //   const isAnyAvailable = services.some(
+        //     (s) => s.availabilityStatus === "available",
+        //   );
+        setstatus(status);
+        // }
       } catch (err) {
         console.error(err);
         setError("Failed to load profile");
@@ -70,9 +94,9 @@ console.log(professional)
   useEffect(() => {
     setUserData((prev) => ({
       ...prev,
-      available: isAvailable,
+      available: status,
     }));
-  }, [isAvailable]);
+  }, [status]);
 
   // ✅ Loading State
   if (loading) {
@@ -95,7 +119,6 @@ console.log(professional)
   return (
     <div className="min-h-screen bg-slate-100 flex justify-center">
       <div className="w-full max-w-6xl px-6 py-8 space-y-8">
-
         {/* 🔹 Header */}
         <HeaderSectionPro
           setUserData={setUserData}
@@ -106,8 +129,8 @@ console.log(professional)
 
         {/* 🔹 Availability */}
         <AvailabilityCardPro
-          setIsAvailable={setIsAvailable}
-          isAvailable={isAvailable}
+          setstatus={setstatus}
+          status={status}
           services={services}
         />
 
@@ -119,7 +142,6 @@ console.log(professional)
 
         {/* 🔹 Bookings */}
         <BookingRequestsPro bookings={bookings} />
-
       </div>
     </div>
   );

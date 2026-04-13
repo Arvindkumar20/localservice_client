@@ -39,7 +39,8 @@ export default function MyBookings() {
           completed: booking.status === "completed",
           timeSlot: booking.timeSlot,
           paymentStatus: booking.paymentStatus,
-          serviceDate: booking.serviceDate
+          serviceDate: booking.serviceDate,
+          phone: booking?.user?.phone
         }));
         
         setBookings(formattedBookings);
@@ -83,8 +84,8 @@ export default function MyBookings() {
 
   // Helper function to get provider name
   const getProviderName = (booking) => {
-    if (booking.service?.professional?.user?.name) {
-      return booking.service.professional.user.name;
+    if (booking.user?.name) {
+      return booking.user?.name;
     }
     if (booking.service?.professional?.categoryName) {
       return booking.service.professional.categoryName;

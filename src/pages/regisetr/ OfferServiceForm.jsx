@@ -54,7 +54,7 @@ export default function OfferServiceForm() {
               { name: "email", label: "Email" },
               { name: "password", label: "Password", type: "password" },
               { name: "phone", label: "Phone" },
-              { name: "categoryName", label: "Category (e.g. Plumber)" },
+              { name: "categoryName", label: "Category (e.g. Plumber,Cook,Electrician,Doctor)" },
               { name: "experience", label: "Experience", type: "number" },
               { name: "pricing", label: "Hourly Rate ₹", type: "number" },
             ].map((item) => (
