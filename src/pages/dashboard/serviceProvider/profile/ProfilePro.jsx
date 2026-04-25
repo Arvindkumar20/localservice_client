@@ -16,14 +16,15 @@ export default function ProfilePro() {
   const { getProfessionalProfile } = useProfessionalApi();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  console.log(userToken);
+
   const [userData, setUserData] = useState({
     name: "",
     email: "",
-    image: "",
+    profilePicture: "",
     available: user.status,
+    
   });
-  console.log(status);
+
   const [services, setServices] = useState([]);
   const [bookings, setBookings] = useState([]);
 
@@ -62,7 +63,7 @@ export default function ProfilePro() {
         setUserData({
           name: professional?.user?.name || "",
           email: professional?.user?.email || "",
-          image: professional?.user?.profilePicture || "",
+          profilePicture: professional?.user?.profilePicture || "",
           available: true,
         });
 
